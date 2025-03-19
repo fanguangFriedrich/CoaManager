@@ -62,6 +62,9 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\development\nugetrepository\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="GongSolutions.WPF.DragDrop, Version=4.0.0.0, Culture=neutral, PublicKeyToken=91f1945125b7a587, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\development\nugetrepository\gong-wpf-dragdrop.4.0.0\lib\net462\GongSolutions.WPF.DragDrop.dll</HintPath>
+    </Reference>
     <Reference Include="Google.Protobuf, Version=3.26.1.0, Culture=neutral, PublicKeyToken=a7d26565bac4d604, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\development\nugetrepository\Google.Protobuf.3.26.1\lib\net45\Google.Protobuf.dll</HintPath>
     </Reference>
