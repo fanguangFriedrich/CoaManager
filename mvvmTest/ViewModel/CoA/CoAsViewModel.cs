@@ -17,6 +17,7 @@ using System.ComponentModel;
 using LiveCharts;
 using LiveCharts.Defaults;
 using LiveCharts.Wpf;
+using System.Windows.Media;
 
 namespace mvvmTest.ViewModel.CoA
 {
@@ -114,6 +115,8 @@ namespace mvvmTest.ViewModel.CoA
         public RelayCommand<CoAViewModel> PasteCommand { get; }
         public RelayCommand<CoAViewModel> CopyCommand { get; }
         public RelayCommand<CoAViewModel> CollectCommand { get; }
+        public RelayCommand<CoAViewModel> ScreenshotCommand { get; }
+        public RelayCommand GetSelectFamilyNameCommand { get; }
         public BaseCommand OuputCommand
         {
             get
@@ -216,11 +219,83 @@ namespace mvvmTest.ViewModel.CoA
             InputDatabaseCommand = new RelayCommand(InputDatabase);
             AddNewItemCommand = new RelayCommand(AddNewItem);
             NameCheckCommand = new RelayCommand(NameCheck);
+            ScreenshotCommand = new RelayCommand<CoAViewModel>(CoaScreenshot);
+            GetSelectFamilyNameCommand = new RelayCommand(GetSelectFamilyName);
+            HandyControl.Controls.Screenshot.Snapped += ScreenshotCaptured;
             //SeriesValues = new ChartValues<ObservablePoint> {new ObservablePoint(2.2, 5.4) ,new ObservablePoint(3.6, 9.6),
             //    new ObservablePoint(9.9, 5.2),
             //    new ObservablePoint(8.1, 4.7),
             //    new ObservablePoint(5.3, 7.1)};
 
+        }
+
+        private void GetSelectFamilyName()
+        {
+            try
+            {
+                
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void CoaScreenshot(CoAViewModel tmpCoA)
+        {
+            if (tmpCoA == null)
+            {
+                return;
+            }
+            try
+            {
+                HandyControl.Controls.Screenshot screenshot = new HandyControl.Controls.Screenshot();
+                screenshot.Start();
+              
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private void ScreenshotCaptured(object sender, HandyControl.Data.FunctionEventArgs<System.Windows.Media.ImageSource> e)
+        {
+            ImageSource targetImageSource = e.Info;
+
+            try
+            {
+                if (targetImageSource == null)
+                {
+                    throw new Exception("无法获取截图像数据");
+                }
+
+                string savedImagePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
+
+                if (SelectCoA != null)
+                {
+                    savedImagePath = Path.Combine(savedImagePath, $"{SelectCoA.Name}.png");
+                }
+                else
+                {
+                    return;
+                }
+
+                // 确保保存目录存在
+                Directory.CreateDirectory(Path.GetDirectoryName(savedImagePath));
+
+                SaveImageAsPng(targetImageSource, savedImagePath);
+
+                SelectCoA.Name = SelectCoA.Name;
+
+                MessageBox.Show($"图像已保存到: {savedImagePath}");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"截图失败: {ex.Message}");
+            }
+            
         }
 
         private void NameCheck()
@@ -401,6 +476,67 @@ namespace mvvmTest.ViewModel.CoA
 
         public void SaveImageAsPng(BitmapSource bitmapSource, string filePath)
         {
+            using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
+            {
+                var pngEncoder = new PngBitmapEncoder();
+                pngEncoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                pngEncoder.Save(fileStream);
+            }
+        }
+
+        public void SaveImageAsPng(ImageSource imageSource, string filePath)
+        {
+            BitmapSource bitmapSource = null;
+
+            if (imageSource is BitmapSource bitmap)
+            {
+                bitmapSource = bitmap;
+            }
+            else
+            {
+                // 通用方法：将任何ImageSource渲染到Visual上
+                var visual = new DrawingVisual();
+
+                // 获取图像的实际尺寸
+                double width = imageSource.Width;
+                double height = imageSource.Height;
+
+                // 如果Width/Height为NaN，尝试从其他属性获取尺寸
+                if (double.IsNaN(width) || double.IsNaN(height))
+                {
+                    if (imageSource is DrawingImage drawingImg)
+                    {
+                        var bounds = drawingImg.Drawing.Bounds;
+                        width = bounds.IsEmpty ? 100 : bounds.Width;
+                        height = bounds.IsEmpty ? 100 : bounds.Height;
+                    }
+                    else
+                    {
+                        // 默认尺寸
+                        width = double.IsNaN(width) ? 100 : width;
+                        height = double.IsNaN(height) ? 100 : height;
+                    }
+                }
+
+                // 确保尺寸有效
+                if (width <= 0 || double.IsInfinity(width)) width = 100;
+                if (height <= 0 || double.IsInfinity(height)) height = 100;
+
+                using (var context = visual.RenderOpen())
+                {
+                    context.DrawImage(imageSource, new Rect(0, 0, width, height));
+                }
+
+                var renderBitmap = new RenderTargetBitmap(
+                    (int)Math.Ceiling(width),
+                    (int)Math.Ceiling(height),
+                    96, 96,
+                    PixelFormats.Pbgra32);
+
+                renderBitmap.Render(visual);
+                bitmapSource = renderBitmap;
+            }
+
             using (var fileStream = new System.IO.FileStream(filePath, System.IO.FileMode.Create))
             {
                 var pngEncoder = new PngBitmapEncoder();

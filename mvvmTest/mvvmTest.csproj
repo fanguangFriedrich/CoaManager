@@ -42,6 +42,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Mvvm, Version=1.0.0.0, Culture=neutral, PublicKeyToken=e8271a241819f1f2, processorArchitecture=MSIL" />
+    <Reference Include="PipeCommunicationLibrary, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\git_my\CreatePeopleTool-4.1-stable\PipeCommunicationLibrary\bin\Debug\netstandard2.0\PipeCommunicationLibrary.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Configuration" />
@@ -73,6 +77,8 @@
     </ApplicationDefinition>
     <Compile Include="Converts\Converts.cs" />
     <Compile Include="Helper\DatabaseHelper.cs" />
+    <Compile Include="Helper\FileHeartbeatServer.cs" />
+    <Compile Include="Helper\PipeServerService.cs" />
     <Compile Include="Helper\RichTextBoxHelper.cs" />
     <Compile Include="Helper\ValidationRule.cs" />
     <Compile Include="Migrations\202502050911377_InitialCreate.cs" />
@@ -183,6 +189,9 @@
     <PackageReference Include="Google.Protobuf">
       <Version>3.26.1</Version>
     </PackageReference>
+    <PackageReference Include="HandyControl">
+      <Version>3.5.1</Version>
+    </PackageReference>
     <PackageReference Include="K4os.Compression.LZ4">
       <Version>1.3.8</Version>
     </PackageReference>
@@ -240,12 +249,22 @@
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>6.0.0</Version>
     </PackageReference>
+    <PackageReference Include="System.Text.Json">
+      <Version>9.0.6</Version>
+    </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions">
       <Version>4.5.4</Version>
     </PackageReference>
     <PackageReference Include="ZstdSharp.Port">
       <Version>0.8.0</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Res\screenshot.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Dll\PipeCommunicationLibrary.dll" />
+    <Resource Include="Res\get.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\..\..\development\nugetrepository\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\..\..\..\development\nugetrepository\EntityFramework.6.5.1\build\EntityFramework.targets')" />

@@ -8,6 +8,7 @@
         xmlns:c="clr-namespace:mvvmTest.ViewModel.Common"
         xmlns:cv="clr-namespace:mvvmTest.Converts"
         xmlns:helper="clr-namespace:CoATool.Helper"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:adonisExtensions="clr-namespace:AdonisUI.Extensions;assembly=AdonisUI"
         xmlns:adonisUi="clr-namespace:AdonisUI;assembly=AdonisUI"
         xmlns:adonisControls="clr-namespace:AdonisUI.Controls;assembly=AdonisUI"
@@ -20,10 +21,31 @@
     <adonisControls:AdonisWindow.TitleBarContent>
         <StackPanel Orientation="Horizontal" 
                     HorizontalAlignment="Right">
-            <Button Content="?"
-                    Style="{DynamicResource {x:Static adonisUi:Styles.WindowButton}}"
-                    FontFamily="Segoe UI"
-                    FontSize="14"/>
+            <Button Style="{DynamicResource {x:Static adonisUi:Styles.WindowButton}}" 
+                        Command="{Binding GetSelectFamilyNameCommand}" 
+adonisExtensions:CursorSpotlightExtension.BackgroundBrush="DarkRed" 
+adonisExtensions:CursorSpotlightExtension.BorderBrush="Black"
+                ToolTip="获取创建人物工具当前选中的家族"
+>
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Res/get.png" Width="15"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+            <Button Style="{DynamicResource {x:Static adonisUi:Styles.WindowButton}}" 
+                        Command="{Binding ScreenshotCommand}" 
+    CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
+adonisExtensions:CursorSpotlightExtension.BackgroundBrush="DarkRed" 
+adonisExtensions:CursorSpotlightExtension.BorderBrush="Black"
+                ToolTip="双击确定截图完成"
+>               
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <Image Source="/Res/screenshot.png" Width="15"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
         </StackPanel>
     </adonisControls:AdonisWindow.TitleBarContent>
     <Window.Resources>
@@ -205,11 +227,11 @@ CanSelectHalf="True"
                     adonisExtensions:CursorSpotlightExtension.BackgroundBrush="DarkRed" 
                     adonisExtensions:CursorSpotlightExtension.BorderBrush="Black"
                     />
-            <Button x:Name="pasteBTN" Content="粘贴进去" Width="100" Height="30" Margin="5,0,5,0"
+                <Button x:Name="pasteBTN" Content="粘贴进去" Width="100" Height="30" Margin="5,0,5,0"
                         Command="{Binding PasteCommand}" 
                         CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
                     Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}"/>
-        </StackPanel>
+            </StackPanel>
     </StackPanel>
 
     <Grid Grid.Column="2" Grid.Row="0">
