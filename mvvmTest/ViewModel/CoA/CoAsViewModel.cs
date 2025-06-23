@@ -18,6 +18,7 @@ using LiveCharts;
 using LiveCharts.Defaults;
 using LiveCharts.Wpf;
 using System.Windows.Media;
+using PipeCommunicationLibrary;
 
 namespace mvvmTest.ViewModel.CoA
 {
@@ -33,8 +34,20 @@ namespace mvvmTest.ViewModel.CoA
         private string _richText="";
         private ObservableCollection<CoAViewModel> _CoAs= new ObservableCollection<CoAViewModel>();
         private ObservableCollection<CoAViewModel> _FindCoAs = new ObservableCollection<CoAViewModel>();
+        private string _SelectFamilyName;
+        private PipeServerService pipeServerService;
         public ChartValues<int> SeriesValues { get; set; }=new ChartValues<int>();
         public SeriesCollection PieSeriesCollection { get; set; } = new SeriesCollection();
+
+        public string SelectFamilyName
+        {
+            get { return _SelectFamilyName; }
+            set
+            {
+                _SelectFamilyName = value;
+                OnPropertyChanged("SelectFamilyName");
+            }
+        }
         public ObservableCollection<CoAViewModel> CoAs
         {
             get { return _CoAs; }
@@ -222,6 +235,12 @@ namespace mvvmTest.ViewModel.CoA
             ScreenshotCommand = new RelayCommand<CoAViewModel>(CoaScreenshot);
             GetSelectFamilyNameCommand = new RelayCommand(GetSelectFamilyName);
             HandyControl.Controls.Screenshot.Snapped += ScreenshotCaptured;
+            pipeServerService = Application.Current.Properties["PipeServerService"] as PipeServerService;
+            pipeServerService.RecvCommonFamilyOccurred += (commonFamily) =>
+            {
+                // 处理接收到的 CommonFamily 数据
+                SelectFamilyName = commonFamily.FamilyName;
+            };
             //SeriesValues = new ChartValues<ObservablePoint> {new ObservablePoint(2.2, 5.4) ,new ObservablePoint(3.6, 9.6),
             //    new ObservablePoint(9.9, 5.2),
             //    new ObservablePoint(8.1, 4.7),

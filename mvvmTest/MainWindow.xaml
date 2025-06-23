@@ -33,6 +33,9 @@ adonisExtensions:CursorSpotlightExtension.BorderBrush="Black"
                     </StackPanel>
                 </Button.Content>
             </Button>
+            <TextBox adonisExtensions:WatermarkExtension.Watermark="目标家族名" Width="200" VerticalAlignment="Center"
+                     ToolTip="目标家族名"
+                     Text="{Binding SelectFamilyName}"/>
             <Button Style="{DynamicResource {x:Static adonisUi:Styles.WindowButton}}" 
                         Command="{Binding ScreenshotCommand}" 
     CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
@@ -335,5 +338,8 @@ CanSelectHalf="True"
 
         </Expander>
     </Grid>
-</Grid>
+        <ScrollViewer Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" VerticalScrollBarVisibility="Hidden" HorizontalAlignment="Right">
+            <StackPanel hc:Growl.GrowlParent="True" VerticalAlignment="Top" Margin="0,10,10,10"/>
+        </ScrollViewer>
+    </Grid>
 </adonisControls:AdonisWindow>

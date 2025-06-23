@@ -7,6 +7,8 @@ using System.Text;
 using System.Threading.Tasks;
 using PipeCommunicationLibrary;
 using System.Threading;
+using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace CoATool.Helper
 {
@@ -16,6 +18,7 @@ namespace CoATool.Helper
         private bool _isRunning;
         private readonly object _lockObject = new object();
         private CancellationTokenSource _cancellationTokenSource;
+        public event Action<CommonFamily> RecvCommonFamilyOccurred;
 
         public void Start()
         {
@@ -33,41 +36,39 @@ namespace CoATool.Helper
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                NamedPipeServerStream pipeServer = null;
                 try
                 {
-                    // 创建命名管道服务器
-                    _pipeServer = new NamedPipeServerStream(
+                    // 创建命名管道服务器，支持多个客户端连接
+                    pipeServer = new NamedPipeServerStream(
                         PipeConstants.PIPE_NAME,
                         PipeDirection.InOut,
-                        1,
+                        NamedPipeServerStream.MaxAllowedServerInstances, // 允许多个实例
                         PipeTransmissionMode.Message);
 
-                    // 使用CancellationToken等待客户端连接
-                    await _pipeServer.WaitForConnectionAsync(cancellationToken);
+                    // 等待客户端连接
+                    await pipeServer.WaitForConnectionAsync(cancellationToken);
 
-                    // 检查是否已经取消
                     if (cancellationToken.IsCancellationRequested)
-                        break;
-
-                    using (StreamReader reader = new StreamReader(_pipeServer))
-                    using (StreamWriter writer = new StreamWriter(_pipeServer))
                     {
-                        // 使用超时读取消息
-                        var readTask = reader.ReadLineAsync();
-                        var timeoutTask = Task.Delay(5000, cancellationToken); // 5秒超时
-
-                        var completedTask = await Task.WhenAny(readTask, timeoutTask);
-
-                        if (completedTask == readTask && !cancellationToken.IsCancellationRequested)
-                        {
-                            string message = await readTask;
-                            if (message == PipeConstants.CHECK_STATUS_MESSAGE)
-                            {
-                                await writer.WriteLineAsync(PipeConstants.APP_B_RUNNING_MESSAGE);
-                                await writer.FlushAsync();
-                            }
-                        }
+                        pipeServer.Dispose();
+                        break;
                     }
+
+                    HandyControl.Controls.Growl.Success("新客户端已连接");
+
+                    // 为每个客户端连接创建一个独立的处理任务
+                    var clientTask = HandleClientConnection(pipeServer, cancellationToken);
+
+                    // 不要await这个任务，让它在后台运行
+                    _ = clientTask.ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            HandyControl.Controls.Growl.Error($"客户端处理任务出错: {t.Exception?.GetBaseException().Message}");
+                        }
+                        HandyControl.Controls.Growl.Warning("客户端处理任务结束");
+                    }, TaskScheduler.Default);
                 }
                 catch (OperationCanceledException)
                 {
@@ -76,13 +77,118 @@ namespace CoATool.Helper
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"Pipe server error: {ex.Message}");
+                    HandyControl.Controls.Growl.Error($"创建管道服务器时出错: {ex.Message}");
+                    pipeServer?.Dispose();
+                    await Task.Delay(1000, cancellationToken); // 等待1秒后重试
                 }
                 finally
                 {
                     // 安全地关闭管道
                     SafeClosePipe();
                 }
+            }
+        }
+
+        private async Task HandleClientConnection(NamedPipeServerStream pipeServer, CancellationToken cancellationToken)
+        {
+            try
+            {
+                using (pipeServer)
+                using (StreamReader reader = new StreamReader(pipeServer))
+                using (StreamWriter writer = new StreamWriter(pipeServer))
+                {
+                    writer.AutoFlush = true; // 自动刷新缓冲区
+
+                    // 在同一个连接中循环读取多条消息
+                    while (pipeServer.IsConnected && !cancellationToken.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            // 使用超时读取消息
+                            var readTask = reader.ReadLineAsync();
+                            var timeoutTask = Task.Delay(10000, cancellationToken); // 10秒超时
+                            var completedTask = await Task.WhenAny(readTask, timeoutTask);
+
+                            if (completedTask == readTask && !cancellationToken.IsCancellationRequested)
+                            {
+                                string message = await readTask;
+                                HandyControl.Controls.Growl.Success($@"接收到的消息:{message}");
+
+                                // 如果读取到null，说明客户端断开连接
+                                if (message == null)
+                                {
+                                    HandyControl.Controls.Growl.Warning("客户端断开连接");
+                                    break;
+                                }
+
+                                // 处理接收到的消息
+                                await ProcessMessageAsync(message, writer);
+                            }
+                            else if (completedTask == timeoutTask)
+                            {
+                                // 超时了，可以发送心跳检测
+                                if (pipeServer.IsConnected)
+                                {
+                                    try
+                                    {
+                                        await writer.WriteLineAsync("HEARTBEAT");
+                                    }
+                                    catch
+                                    {
+                                        HandyControl.Controls.Growl.Warning("客户端断开连接");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        catch (IOException ioEx)
+                        {
+                            HandyControl.Controls.Growl.Error($"管道连接中断: {ioEx.Message}");
+                            break;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            HandyControl.Controls.Growl.Warning("管道已被释放");
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            HandyControl.Controls.Growl.Error($"读取消息时出错: {ex.Message}");
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                HandyControl.Controls.Growl.Error($"处理客户端连接时出错: {ex.Message}");
+            }
+            finally
+            {
+                HandyControl.Controls.Growl.Warning("客户端连接处理结束");
+            }
+        }
+
+        private async Task ProcessMessageAsync(string message, StreamWriter writer)
+        {
+            try
+            {
+                PipeMessage pipeMessage = JsonConvert.DeserializeObject<PipeMessage>(message);
+                switch (pipeMessage.MessageType)
+                {
+                    case PipeMessageType.SendFamilyInfo:
+                        CommonFamily commonFamily = JsonConvert.DeserializeObject<CommonFamily>(pipeMessage.Content);
+                        RecvCommonFamilyOccurred?.Invoke(commonFamily);
+                        break;
+                    default:
+                        Console.WriteLine($"Unknown message type: {pipeMessage.MessageType}");
+                        await writer.WriteLineAsync("UNKNOWN_TYPE");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"处理消息时出错: {ex.Message}");
             }
         }
 

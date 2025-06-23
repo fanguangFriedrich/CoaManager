@@ -216,6 +216,9 @@
     <PackageReference Include="MySql.Data.EntityFramework">
       <Version>8.0.33</Version>
     </PackageReference>
+    <PackageReference Include="Newtonsoft.Json">
+      <Version>13.0.3</Version>
+    </PackageReference>
     <PackageReference Include="Panuon.WPF">
       <Version>1.1.2.2</Version>
     </PackageReference>
@@ -263,7 +266,6 @@
     <Resource Include="Res\screenshot.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Dll\PipeCommunicationLibrary.dll" />
     <Resource Include="Res\get.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
