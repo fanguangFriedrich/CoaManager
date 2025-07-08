@@ -19,6 +19,7 @@ using LiveCharts.Defaults;
 using LiveCharts.Wpf;
 using System.Windows.Media;
 using PipeCommunicationLibrary;
+using Google.Protobuf.WellKnownTypes;
 
 namespace mvvmTest.ViewModel.CoA
 {
@@ -129,7 +130,9 @@ namespace mvvmTest.ViewModel.CoA
         public RelayCommand<CoAViewModel> CopyCommand { get; }
         public RelayCommand<CoAViewModel> CollectCommand { get; }
         public RelayCommand<CoAViewModel> ScreenshotCommand { get; }
-        public RelayCommand GetSelectFamilyNameCommand { get; }
+        public CommunityToolkit.Mvvm.Input.AsyncRelayCommand GetSelectFamilyNameCommand { get; }
+        public CommunityToolkit.Mvvm.Input.AsyncRelayCommand<CoAViewModel> SendPasteContentCommand { get; }
+        public CommunityToolkit.Mvvm.Input.AsyncRelayCommand<CoAViewModel> SendPicCommand { get; }
         public BaseCommand OuputCommand
         {
             get
@@ -233,7 +236,9 @@ namespace mvvmTest.ViewModel.CoA
             AddNewItemCommand = new RelayCommand(AddNewItem);
             NameCheckCommand = new RelayCommand(NameCheck);
             ScreenshotCommand = new RelayCommand<CoAViewModel>(CoaScreenshot);
-            GetSelectFamilyNameCommand = new RelayCommand(GetSelectFamilyName);
+            GetSelectFamilyNameCommand = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand(GetSelectFamilyName);
+            SendPasteContentCommand = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand<CoAViewModel>(SendPasteContent);
+            SendPicCommand = new CommunityToolkit.Mvvm.Input.AsyncRelayCommand<CoAViewModel>(SendPic);
             HandyControl.Controls.Screenshot.Snapped += ScreenshotCaptured;
             pipeServerService = Application.Current.Properties["PipeServerService"] as PipeServerService;
             pipeServerService.RecvCommonFamilyOccurred += (commonFamily) =>
@@ -248,11 +253,76 @@ namespace mvvmTest.ViewModel.CoA
 
         }
 
-        private void GetSelectFamilyName()
+        private async Task SendPic(CoAViewModel tmpCoA)
+        {
+            if (tmpCoA == null)
+            {
+                return;
+            }
+            try
+            {
+                string folderPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
+                string filePath = Path.Combine(folderPath, string.Format(@"{0}.png", tmpCoA.Name));
+
+                // 如果文件夹不存在则创建
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    //CommonFunc.CopyImageFromFileDialog(filePath);
+                    File.Copy(Path.Combine(folderPath, "null.png"), filePath, true);
+                }
+
+                await pipeServerService.BroadcastMessageAsync(filePath,PipeMessageType.SendCoAPic);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private async Task SendPasteContent(CoAViewModel tmpCoA)
+        {
+            if (tmpCoA == null)
+            {
+                return;
+            }
+            try
+            {
+                string folderPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CoAFile");
+                string filePath = System.IO.Path.Combine(folderPath, string.Format(@"{0}.txt", tmpCoA.Name));
+                // 如果文件夹不存在则创建
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    using (StreamWriter writer = File.CreateText(filePath))
+                    {
+
+                    }
+                }
+
+                await pipeServerService.BroadcastMessageAsync(File.ReadAllText(filePath));
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+        }
+
+        private async Task GetSelectFamilyName()
         {
             try
             {
-                
+                await pipeServerService.BroadcastMessageAsync("hello");
 
             }
             catch (Exception ex)

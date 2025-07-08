@@ -234,6 +234,14 @@ CanSelectHalf="True"
                         Command="{Binding PasteCommand}" 
                         CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
                     Style="{DynamicResource {x:Static adonisUi:Styles.AccentButton}}"/>
+                <Button Content="传送粘贴内容" Width="100" Height="30" Margin="5,0,5,0"
+        Command="{Binding SendPasteContentCommand}" 
+        CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
+        Background="DarkGreen" Foreground="White"/>
+                <Button Content="传送图片" Width="100" Height="30" Margin="5,0,5,0"
+Command="{Binding SendPicCommand}" 
+CommandParameter="{Binding SelectedItem,ElementName=listBoxCoAs}"
+Background="DarkOrange" Foreground="White"/>
             </StackPanel>
     </StackPanel>
 
